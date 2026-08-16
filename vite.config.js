@@ -1,17 +1,18 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { fetchLakeLevel } from './shared/usace.mjs';
 
-const PARCEL_WMS = 'https://okmaps.org/geoserver/wms';
-const PARCEL_LAYER = 'ogi_wms:Statewide_Parcels';
+// Note: shared/ modules are imported lazily inside the middleware below rather
+// than at the top of this file. Cloudflare's wrangler parses vite.config.js
+// during deploy and chokes on top-level imports it cannot resolve.
 
-// In production /api/parcel is a Netlify function. This gives the dev server
-// the same endpoint so the app code has no idea which one it is talking to.
-function parcelProxy() {
+// Dev-side twins of the deployed /api/* handlers, so app code never knows
+// whether it is talking to Vite, a Worker or a Netlify function.
+function apiProxy() {
   return {
-    name: 'parcel-proxy',
+    name: 'api-proxy',
     configureServer(server) {
       server.middlewares.use('/api/parcel', async (req, res) => {
+        const { fetchParcel } = await import('./shared/parcel.mjs');
         const { searchParams } = new URL(req.url, 'http://localhost');
         const lat = Number(searchParams.get('lat'));
         const lng = Number(searchParams.get('lng'));
@@ -23,35 +24,16 @@ function parcelProxy() {
           return;
         }
 
-        const d = 0.0008;
-        const bbox = [lng - d, lat - d, lng + d, lat + d].join(',');
-        const url = `${PARCEL_WMS}?service=WMS&version=1.1.1&request=GetFeatureInfo`
-          + `&layers=${encodeURIComponent(PARCEL_LAYER)}&query_layers=${encodeURIComponent(PARCEL_LAYER)}`
-          + `&srs=EPSG:4326&bbox=${bbox}&width=101&height=101&x=50&y=50`
-          + '&info_format=application/json&feature_count=1';
-
         try {
-          const upstream = await fetch(url, { headers: { accept: 'application/json' } });
-          const data = await upstream.json();
-          const feature = (data.features || [])[0];
-          res.end(JSON.stringify({
-            parcel: feature ? { ...feature.properties, geometry: feature.geometry } : null,
-          }));
+          res.end(JSON.stringify({ parcel: await fetchParcel(lng, lat) }));
         } catch (err) {
           res.statusCode = 502;
           res.end(JSON.stringify({ error: err.message }));
         }
       });
-    },
-  };
-}
 
-// Dev-side twin of the lake-level Netlify function.
-function lakeLevelProxy() {
-  return {
-    name: 'lake-level-proxy',
-    configureServer(server) {
       server.middlewares.use('/api/lake-level', async (req, res) => {
+        const { fetchLakeLevel } = await import('./shared/usace.mjs');
         res.setHeader('content-type', 'application/json');
         try {
           res.end(JSON.stringify({ level: await fetchLakeLevel() }));
@@ -66,7 +48,7 @@ function lakeLevelProxy() {
 
 export default defineConfig({
   base: './',
-  plugins: [react(), parcelProxy(), lakeLevelProxy()],
+  plugins: [react(), apiProxy()],
   server: { host: true },
   build: {
     // mapbox-gl is ~1.6 MB and changes only when we upgrade it, while app code

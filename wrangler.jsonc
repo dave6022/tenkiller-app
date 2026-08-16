@@ -1,0 +1,20 @@
+{
+  // Deploys the built site as a Worker with static assets. Without this file
+  // wrangler tries to infer configuration from vite.config.js and fails.
+  "name": "tenkiller",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-08-01",
+
+  "assets": {
+    // Vite's output. The Worker falls through to this for anything that is
+    // not /api/*.
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Single page app: unknown paths return index.html rather than a 404.
+    "not_found_handling": "single-page-application"
+  },
+
+  "observability": {
+    "enabled": true
+  }
+}
