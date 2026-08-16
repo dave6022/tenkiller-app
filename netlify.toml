@@ -1,0 +1,9 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[build.environment]
+  # Pin the runtime so a change to Netlify's default can't break the build.
+  # Functions use the v2 signature, which needs Node 18 or newer.
+  NODE_VERSION = "20"

@@ -1,0 +1,13 @@
+# Netlify reads this from the published directory, drag-and-drop deploys included.
+
+# Without this the manifest is served as application/octet-stream, which is not
+# a MIME type browsers are obliged to treat as a web app manifest.
+/manifest.webmanifest
+  Content-Type: application/manifest+json; charset=utf-8
+
+# Vite fingerprints these filenames, so they can never go stale.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/icons/*
+  Cache-Control: public, max-age=604800

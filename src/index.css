@@ -1,0 +1,38 @@
+html, body {
+  margin: 0;
+  background: #22301C;
+  font-family: Geist, system-ui, sans-serif;
+  color: #14170F;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+button, a, input, textarea { -webkit-tap-highlight-color: transparent; }
+
+/* 16px keeps iOS from zooming the page when a field takes focus. */
+input, textarea, button { font-size: 16px; }
+
+/* No double-tap zoom, no long-press callout on the app's own controls. */
+button {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+input, textarea { -webkit-user-select: text; user-select: text; }
+
+::-webkit-scrollbar { width: 0; height: 0; }
+
+/* Mapbox chrome, toned down to match the app. */
+.mapboxgl-ctrl-attrib {
+  font: 400 9px/1.4 Geist, system-ui !important;
+  background: rgba(251, 250, 248, .78) !important;
+}
+.mapboxgl-ctrl-bottom-left,
+.mapboxgl-ctrl-bottom-right {
+  margin-bottom: calc(var(--tk-footer, 12px) + 62px);
+}
+.mapboxgl-ctrl-group {
+  border-radius: 11px !important;
+  box-shadow: 0 2px 10px rgba(20, 23, 15, .2) !important;
+}

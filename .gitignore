@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.zip
+.vite/
+*.local
+.DS_Store
+
+# Secrets. .env holds the Mapbox token — it must never reach the repo.
+# .env.example is committed and carries no values.
+.env
+.env.*
+!.env.example
+
+# Netlify CLI state
+.netlify/
