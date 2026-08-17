@@ -556,6 +556,97 @@ LAYERS.push({
   },
 });
 
+// Trails, extracted from the Geofabrik Oklahoma OSM extract.
+//
+// ODbL — attribution is required and set on the source below.
+//
+// Drawn as a dark casing under a bright dashed line, which is the convention
+// outdoor maps use because a single-stroke line disappears over aerial imagery.
+//
+// Regenerate with: node tools/fetch-trails.mjs <oklahoma-latest.osm.pbf>
+const TRAIL_COLORS = [
+  'match', ['get', 'kind'],
+  'path', '#F59E0B',
+  'footway', '#FBBF24',
+  'track', '#D97706',
+  'cycleway', '#38BDF8',
+  'steps', '#C084FC',
+  '#F59E0B',
+];
+
+LAYERS.push({
+  id: 'trails',
+  name: 'Trails',
+  group: 'Landmarks',
+  note: 'Hiking paths, tracks and cycleways. Farm tracks are filtered out unless named or waymarked.',
+  defaultOn: true,
+  attach(map) {
+    if (!map.getSource('trails')) {
+      map.addSource('trails', {
+        type: 'geojson',
+        data: new URL('data/trails.geojson', document.baseURI).href,
+        attribution: '© OpenStreetMap contributors',
+      });
+    }
+
+    if (!map.getLayer('trail-casing')) {
+      map.addLayer({
+        id: 'trail-casing',
+        type: 'line',
+        source: 'trails',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': 'rgba(20,23,15,0.65)',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 3, 17, 8],
+        },
+      });
+    }
+
+    if (!map.getLayer('trail-line')) {
+      map.addLayer({
+        id: 'trail-line',
+        type: 'line',
+        source: 'trails',
+        layout: { 'line-cap': 'butt', 'line-join': 'round' },
+        paint: {
+          'line-color': TRAIL_COLORS,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.4, 17, 4],
+          'line-dasharray': [2, 1.4],
+        },
+      });
+    }
+
+    if (!map.getLayer('trail-label')) {
+      map.addLayer({
+        id: 'trail-label',
+        type: 'symbol',
+        source: 'trails',
+        filter: ['has', 'name'],
+        minzoom: 12,
+        layout: {
+          'symbol-placement': 'line',
+          'text-field': ['get', 'name'],
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 13],
+          'symbol-spacing': 260,
+          'text-optional': true,
+        },
+        paint: {
+          'text-color': '#FDE68A',
+          'text-halo-color': 'rgba(20,23,15,0.9)',
+          'text-halo-width': 1.4,
+        },
+      });
+    }
+  },
+  detach(map) {
+    ['trail-label', 'trail-line', 'trail-casing'].forEach((id) => {
+      if (map.getLayer(id)) map.removeLayer(id);
+    });
+    if (map.getSource('trails')) map.removeSource('trails');
+  },
+});
+
 const SELECTED_SOURCE = 'parcel-selected';
 
 /** Outline the parcel the user tapped, using the geometry the lookup returned. */
