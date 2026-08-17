@@ -219,6 +219,120 @@ export const DEPTH_STATUS = {
   reason: 'Lake Tenkiller has no publicly published bathymetry. The Corps surveyed it in 2015 but has not released it as data.',
 };
 
+// Landmarks: parks, campgrounds, reserves, marinas, boat ramps and named peaks.
+//
+// Source: OpenStreetMap, licensed ODbL — free to use commercially, requires
+// attribution, which is set on the source below and shown in the map's
+// attribution control. Pre-fetched to a static file rather than queried live:
+// these features change rarely, and hammering the volunteer-run Overpass API on
+// every page load would be rude.
+//
+// Regenerate with the Overpass query documented in README.
+const LANDMARK_COLORS = [
+  'match', ['get', 'kind'],
+  'park', '#3F6212',
+  'campground', '#B45309',
+  'reserve', '#0F766E',
+  'marina', '#1D4ED8',
+  'ramp', '#1D4ED8',
+  'peak', '#7C6A52',
+  '#4A4F42',
+];
+
+LAYERS.push({
+  id: 'landmarks',
+  name: 'Parks & landmarks',
+  group: 'Landmarks',
+  note: 'Park, campground and refuge boundaries, plus marinas, boat ramps and named peaks with elevations. OpenStreetMap.',
+  defaultOn: false,
+  attach(map) {
+    if (!map.getSource('landmarks')) {
+      map.addSource('landmarks', {
+        type: 'geojson',
+        data: new URL('data/landmarks.geojson', document.baseURI).href,
+        attribution: '© OpenStreetMap contributors',
+      });
+    }
+    const before = firstLabelLayer(map);
+
+    // Area fills
+    if (!map.getLayer('landmark-fill')) {
+      map.addLayer({
+        id: 'landmark-fill',
+        type: 'fill',
+        source: 'landmarks',
+        filter: ['==', ['geometry-type'], 'Polygon'],
+        paint: { 'fill-color': LANDMARK_COLORS, 'fill-opacity': 0.18 },
+      }, before);
+    }
+
+    // Outlines — the boundary is the point of this layer, so it stays crisp.
+    if (!map.getLayer('landmark-outline')) {
+      map.addLayer({
+        id: 'landmark-outline',
+        type: 'line',
+        source: 'landmarks',
+        filter: ['!=', ['geometry-type'], 'Point'],
+        paint: {
+          'line-color': LANDMARK_COLORS,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 10, 1.2, 15, 2.6],
+          'line-opacity': 0.95,
+        },
+      }, before);
+    }
+
+    // Points: peaks, ramps, marinas, campground nodes
+    if (!map.getLayer('landmark-point')) {
+      map.addLayer({
+        id: 'landmark-point',
+        type: 'circle',
+        source: 'landmarks',
+        filter: ['==', ['geometry-type'], 'Point'],
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 3, 15, 6],
+          'circle-color': LANDMARK_COLORS,
+          'circle-stroke-color': '#FBFAF8',
+          'circle-stroke-width': 1.4,
+        },
+      }, before);
+    }
+
+    // Labels. Peaks carry their elevation, which is the useful part.
+    if (!map.getLayer('landmark-label')) {
+      map.addLayer({
+        id: 'landmark-label',
+        type: 'symbol',
+        source: 'landmarks',
+        filter: ['has', 'name'],
+        layout: {
+          'text-field': [
+            'case',
+            ['all', ['==', ['get', 'kind'], 'peak'], ['has', 'ele_ft']],
+            ['concat', ['get', 'name'], '\n', ['to-string', ['get', 'ele_ft']], ' ft'],
+            ['get', 'name'],
+          ],
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 10, 10, 15, 13],
+          'text-anchor': 'top',
+          'text-offset': [0, 0.6],
+          'text-optional': true,
+        },
+        paint: {
+          'text-color': '#FBFAF8',
+          'text-halo-color': 'rgba(20,23,15,0.9)',
+          'text-halo-width': 1.4,
+        },
+      });
+    }
+  },
+  detach(map) {
+    ['landmark-label', 'landmark-point', 'landmark-outline', 'landmark-fill'].forEach((id) => {
+      if (map.getLayer(id)) map.removeLayer(id);
+    });
+    if (map.getSource('landmarks')) map.removeSource('landmarks');
+  },
+});
+
 const SELECTED_SOURCE = 'parcel-selected';
 
 /** Outline the parcel the user tapped, using the geometry the lookup returned. */

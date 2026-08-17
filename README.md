@@ -1,5 +1,51 @@
 # Tenkiller Map
 
+## Landmarks layer & data licensing
+
+`public/data/landmarks.geojson` holds parks, campgrounds, nature reserves,
+marinas, boat ramps and named peaks around the lake — 181 features, 143 named.
+
+**Source: OpenStreetMap, licensed [ODbL](https://opendatacommons.org/licenses/odbl/).**
+Free to use commercially. The licence requires attribution, which is set on the
+GeoJSON source in `src/map/layers.js` so it appears in the map's attribution
+control. **Do not remove it** — that attribution is the licence condition.
+
+It is pre-fetched rather than queried live because these features change rarely,
+and calling the volunteer-run Overpass API on every page load would be abusive.
+
+To regenerate, POST this to `https://overpass-api.de/api/interpreter` with a
+descriptive `User-Agent` (Overpass returns 406 without one), then convert the
+result to GeoJSON:
+
+```
+[out:json][timeout:90];
+(
+  way["leisure"="park"](35.44,-95.28,35.94,-94.72);
+  relation["leisure"="park"](35.44,-95.28,35.94,-94.72);
+  way["tourism"="camp_site"](35.44,-95.28,35.94,-94.72);
+  relation["tourism"="camp_site"](35.44,-95.28,35.94,-94.72);
+  node["tourism"="camp_site"](35.44,-95.28,35.94,-94.72);
+  way["leisure"="nature_reserve"](35.44,-95.28,35.94,-94.72);
+  relation["leisure"="nature_reserve"](35.44,-95.28,35.94,-94.72);
+  way["boundary"="protected_area"](35.44,-95.28,35.94,-94.72);
+  relation["boundary"="protected_area"](35.44,-95.28,35.94,-94.72);
+  way["leisure"="marina"](35.44,-95.28,35.94,-94.72);
+  node["leisure"="marina"](35.44,-95.28,35.94,-94.72);
+  node["natural"="peak"](35.44,-95.28,35.94,-94.72);
+  node["leisure"="slipway"](35.44,-95.28,35.94,-94.72);
+  way["leisure"="slipway"](35.44,-95.28,35.94,-94.72);
+);
+out geom;
+```
+
+### Why not other sources
+
+Commercial map data (Google, Esri basemaps, Navionics) is licensed for display
+inside their own products only — extracting boundaries from them would be a
+licence breach. USGS PAD-US and GNIS are public domain and are good additions if
+you want federal protected-area boundaries, but OSM already covers this lake
+with better campground and boat-ramp detail.
+
 Interactive terrain, elevation and parcel map of Lake Tenkiller, Oklahoma.
 
 ## Parcels & owners
