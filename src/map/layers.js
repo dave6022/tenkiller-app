@@ -333,6 +333,96 @@ LAYERS.push({
   },
 });
 
+// Public lands: Corps recreation areas, state parks, refuges, WMAs.
+//
+// Source: USGS PAD-US 4.1 — a US Government work in the public domain, so no
+// attribution is required, though it is credited anyway.
+//
+// This is the layer that actually covers the lake. OpenStreetMap has good
+// campground and boat-ramp detail but has mapped only two of Tenkiller's park
+// boundaries; PAD-US carries the Corps and state ownership polygons.
+//
+// Regenerate with: node tools/fetch-publiclands.mjs
+const LAND_COLORS = [
+  'match', ['get', 'kind'],
+  'corps', '#2563EB',
+  'statepark', '#3F6212',
+  'refuge', '#0F766E',
+  'wma', '#B45309',
+  'reserve', '#65A30D',
+  'citypark', '#4D7C0F',
+  'historic', '#7C3AED',
+  'military', '#9F1239',
+  '#4A4F42',
+];
+
+LAYERS.push({
+  id: 'publiclands',
+  name: 'Public lands',
+  group: 'Landmarks',
+  note: 'Corps recreation areas, state parks, wildlife refuges and WMAs, with acreage and public access. USGS PAD-US.',
+  defaultOn: true,
+  attach(map) {
+    if (!map.getSource('publiclands')) {
+      map.addSource('publiclands', {
+        type: 'geojson',
+        data: new URL('data/publiclands.geojson', document.baseURI).href,
+        attribution: 'USGS PAD-US',
+      });
+    }
+    const before = firstLabelLayer(map);
+
+    if (!map.getLayer('land-fill')) {
+      map.addLayer({
+        id: 'land-fill',
+        type: 'fill',
+        source: 'publiclands',
+        paint: { 'fill-color': LAND_COLORS, 'fill-opacity': 0.2 },
+      }, before);
+    }
+
+    if (!map.getLayer('land-outline')) {
+      map.addLayer({
+        id: 'land-outline',
+        type: 'line',
+        source: 'publiclands',
+        paint: {
+          'line-color': LAND_COLORS,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 9, 1.4, 15, 3],
+          'line-opacity': 0.95,
+        },
+      }, before);
+    }
+
+    if (!map.getLayer('land-label')) {
+      map.addLayer({
+        id: 'land-label',
+        type: 'symbol',
+        source: 'publiclands',
+        filter: ['has', 'name'],
+        layout: {
+          'text-field': ['concat', ['get', 'name'], '\n', ['get', 'designation']],
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 9, 10, 14, 13],
+          'text-max-width': 11,
+          'text-optional': true,
+        },
+        paint: {
+          'text-color': '#FBFAF8',
+          'text-halo-color': 'rgba(20,23,15,0.9)',
+          'text-halo-width': 1.5,
+        },
+      });
+    }
+  },
+  detach(map) {
+    ['land-label', 'land-outline', 'land-fill'].forEach((id) => {
+      if (map.getLayer(id)) map.removeLayer(id);
+    });
+    if (map.getSource('publiclands')) map.removeSource('publiclands');
+  },
+});
+
 const SELECTED_SOURCE = 'parcel-selected';
 
 /** Outline the parcel the user tapped, using the geometry the lookup returned. */
