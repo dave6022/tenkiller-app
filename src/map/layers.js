@@ -423,6 +423,139 @@ LAYERS.push({
   },
 });
 
+// Campgrounds and individual campsites from Recreation.gov (RIDB).
+//
+// Public domain federal data. The API key is used only by
+// tools/fetch-recreation.mjs at tooling time — it never ships to the browser.
+//
+// Individual sites appear from zoom 13 so a campground reads as one marker on
+// the way in, then resolves into its actual sites once you are close, which is
+// how onX behaves.
+//
+// Regenerate with: node tools/fetch-recreation.mjs
+export const REC_LAYER_IDS = ['rec-campsite', 'rec-campground', 'rec-facility'];
+
+LAYERS.push({
+  id: 'recreation',
+  name: 'Campsites & ramps',
+  group: 'Landmarks',
+  note: 'Every bookable Corps campsite with hookups, vehicle limits and a link to reserve. Zoom in past a campground to see its individual sites.',
+  defaultOn: true,
+  attach(map) {
+    if (!map.getSource('recreation')) {
+      map.addSource('recreation', {
+        type: 'geojson',
+        data: new URL('data/recreation.geojson', document.baseURI).href,
+        attribution: 'Recreation.gov',
+      });
+    }
+
+    if (!map.getLayer('rec-facility')) {
+      map.addLayer({
+        id: 'rec-facility',
+        type: 'circle',
+        source: 'recreation',
+        filter: ['==', ['get', 'kind'], 'facility'],
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 3.5, 15, 6],
+          'circle-color': '#1D4ED8',
+          'circle-stroke-color': '#FBFAF8',
+          'circle-stroke-width': 1.4,
+        },
+      });
+    }
+
+    // Individual sites — only once you are close enough for them to mean
+    // something.
+    if (!map.getLayer('rec-campsite')) {
+      map.addLayer({
+        id: 'rec-campsite',
+        type: 'circle',
+        source: 'recreation',
+        filter: ['==', ['get', 'kind'], 'campsite'],
+        minzoom: 13,
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 2.5, 17, 7],
+          // Sites with power read differently from primitive ones.
+          'circle-color': [
+            'case',
+            ['all', ['has', 'electric'], ['!=', ['get', 'electric'], null]], '#B45309',
+            '#7C6A52',
+          ],
+          'circle-stroke-color': '#FBFAF8',
+          'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 13, 0.6, 17, 1.6],
+        },
+      });
+    }
+
+    if (!map.getLayer('rec-campground')) {
+      map.addLayer({
+        id: 'rec-campground',
+        type: 'circle',
+        source: 'recreation',
+        filter: ['==', ['get', 'kind'], 'campground'],
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 9, 5, 15, 9],
+          'circle-color': '#B45309',
+          'circle-stroke-color': '#FBFAF8',
+          'circle-stroke-width': 2,
+        },
+      });
+    }
+
+    if (!map.getLayer('rec-campground-label')) {
+      map.addLayer({
+        id: 'rec-campground-label',
+        type: 'symbol',
+        source: 'recreation',
+        filter: ['==', ['get', 'kind'], 'campground'],
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 9, 10, 15, 13],
+          'text-anchor': 'top',
+          'text-offset': [0, 0.8],
+          'text-optional': true,
+        },
+        paint: {
+          'text-color': '#FBFAF8',
+          'text-halo-color': 'rgba(20,23,15,0.9)',
+          'text-halo-width': 1.5,
+        },
+      });
+    }
+
+    // Site numbers, only when genuinely readable.
+    if (!map.getLayer('rec-campsite-label')) {
+      map.addLayer({
+        id: 'rec-campsite-label',
+        type: 'symbol',
+        source: 'recreation',
+        filter: ['==', ['get', 'kind'], 'campsite'],
+        minzoom: 16,
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+          'text-size': 11,
+          'text-anchor': 'left',
+          'text-offset': [0.6, 0],
+          'text-optional': true,
+        },
+        paint: {
+          'text-color': '#FBFAF8',
+          'text-halo-color': 'rgba(20,23,15,0.85)',
+          'text-halo-width': 1.2,
+        },
+      });
+    }
+  },
+  detach(map) {
+    ['rec-campsite-label', 'rec-campground-label', 'rec-campground', 'rec-campsite', 'rec-facility']
+      .forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
+    if (map.getSource('recreation')) map.removeSource('recreation');
+  },
+});
+
 const SELECTED_SOURCE = 'parcel-selected';
 
 /** Outline the parcel the user tapped, using the geometry the lookup returned. */

@@ -3,7 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 import { BASEMAPS, LAKE, MAPBOX_TOKEN } from '../config.js';
-import { LAYERS, findLayer, showSelectedParcel } from './layers.js';
+import { LAYERS, REC_LAYER_IDS, findLayer, showSelectedParcel } from './layers.js';
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
@@ -114,14 +114,25 @@ export default function MapView({
       if (!readoutRef.current) return;
       const { lng, lat } = e.lngLat;
       const metres = elevationAt(e.lngLat);
-      readoutRef.current({ lng, lat, metres, pending: metres == null });
+
+      // Did they tap an actual campsite or facility? Query with a small box so
+      // a fingertip does not have to land dead centre on a 3px dot.
+      let site = null;
+      const present = REC_LAYER_IDS.filter((id) => map.getLayer(id));
+      if (present.length) {
+        const box = [[e.point.x - 8, e.point.y - 8], [e.point.x + 8, e.point.y + 8]];
+        const hits = map.queryRenderedFeatures(box, { layers: present });
+        if (hits.length) site = hits[0].properties;
+      }
+
+      readoutRef.current({ lng, lat, metres, pending: metres == null, site });
 
       // The DEM tile for this spot may not have arrived yet. Rather than
       // report a null forever, try once more when the map goes idle.
       if (metres == null) {
         map.once('idle', () => {
           if (!readoutRef.current) return;
-          readoutRef.current({ lng, lat, metres: elevationAt(e.lngLat), pending: false });
+          readoutRef.current({ lng, lat, metres: elevationAt(e.lngLat), pending: false, site });
         });
       }
     });

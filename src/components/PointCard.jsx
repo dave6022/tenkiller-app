@@ -105,6 +105,63 @@ export default function PointCard({ point, parcel, parcelsOn, lake, onClose }) {
         </div>
       )}
 
+      {point.site && (
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(20,23,15,.12)' }}>
+          <div style={{ font: "600 10px/1 'JetBrains Mono',monospace", letterSpacing: '1.1px', color: '#B45309', textTransform: 'uppercase' }}>
+            {point.site.kind === 'campsite' ? 'Campsite' : point.site.kind === 'campground' ? 'Campground' : 'Facility'}
+          </div>
+
+          <div style={{ marginTop: 7, font: '600 17px/1.2 Geist,system-ui' }}>
+            {point.site.kind === 'campsite' ? `Site ${point.site.name}` : point.site.name}
+          </div>
+          {point.site.campground && (
+            <div style={{ marginTop: 3, font: '400 11.5px/1.35 Geist,system-ui', color: '#7C8272' }}>
+              {point.site.campground}
+              {point.site.loop && point.site.loop !== point.site.campground ? ` · loop ${point.site.loop}` : ''}
+            </div>
+          )}
+
+          <div style={{ marginTop: 9 }}>
+            {[
+              ['Type', point.site.siteType],
+              ['Electric', point.site.electric ? `${point.site.electric} amp` : null],
+              ['Water', point.site.water],
+              ['Sewer', point.site.sewer],
+              ['Max people', point.site.maxPeople],
+              ['Max vehicle', point.site.maxVehicleFt ? `${point.site.maxVehicleFt} ft` : null],
+              ['Driveway', [point.site.driveway, point.site.surface].filter(Boolean).join(' · ') || null],
+              ['Shade', point.site.shade],
+              ['Pets', point.site.pets],
+              ['Phone', point.site.phone],
+            ]
+              .filter(([, v]) => v != null && v !== '' && v !== 'false')
+              .map(([k, v], i, arr) => (
+                <div key={k} style={{ ...row, borderBottom: i < arr.length - 1 ? '1px solid rgba(20,23,15,.06)' : 'none' }}>
+                  <span style={key}>{k}</span>
+                  <span style={val}>{String(v)}</span>
+                </div>
+              ))}
+          </div>
+
+          {point.site.url && (
+            <a
+              href={point.site.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'block', marginTop: 10, height: 40, borderRadius: 10, border: 0,
+                background: point.site.reservable ? '#3F6212' : '#fff',
+                color: point.site.reservable ? '#fff' : '#14170F',
+                boxShadow: point.site.reservable ? 'none' : 'inset 0 0 0 1px rgba(20,23,15,.12)',
+                font: '600 13px/40px Geist,system-ui', textAlign: 'center', textDecoration: 'none',
+              }}
+            >
+              {point.site.reservable ? 'Reserve on Recreation.gov ↗' : 'View on Recreation.gov ↗'}
+            </a>
+          )}
+        </div>
+      )}
+
       {parcelsOn && (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(20,23,15,.12)' }}>
           <div style={{ font: "600 10px/1 'JetBrains Mono',monospace", letterSpacing: '1.1px', color: '#7C8272', textTransform: 'uppercase' }}>
