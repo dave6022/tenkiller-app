@@ -69,7 +69,7 @@ export const LAYERS = [
     name: 'Shaded relief',
     group: 'Terrain',
     note: 'Directional shading that reveals draws, benches and ridgelines the imagery flattens out.',
-    defaultOn: false,
+    defaultOn: true,
     attach(map) {
       ensureDem(map);
       if (map.getLayer('hillshade')) return;
@@ -95,7 +95,7 @@ export const LAYERS = [
     name: 'Elevation contours',
     group: 'Terrain',
     note: 'Lines every 10 m, heavier every 50 m, labelled in feet. Works over any basemap.',
-    defaultOn: false,
+    defaultOn: true,
     attach(map) {
       if (!map.getSource('terrain-vector')) {
         map.addSource('terrain-vector', { type: 'vector', url: VECTOR_TERRAIN });
@@ -166,7 +166,7 @@ LAYERS.push({
   name: 'Parcels & owners',
   group: 'Property',
   note: 'County assessor boundaries statewide. Tap a parcel for owner of record, acreage and a link to the county record.',
-  defaultOn: false,
+  defaultOn: true,
   attach(map) {
     if (!map.getSource('parcels')) {
       map.addSource('parcels', {
@@ -244,7 +244,7 @@ LAYERS.push({
   name: 'Parks & landmarks',
   group: 'Landmarks',
   note: 'Park, campground and refuge boundaries, plus marinas, boat ramps and named peaks with elevations. OpenStreetMap.',
-  defaultOn: false,
+  defaultOn: true,
   attach(map) {
     if (!map.getSource('landmarks')) {
       map.addSource('landmarks', {

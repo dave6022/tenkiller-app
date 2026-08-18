@@ -77,6 +77,7 @@ export default function MapView({
       bearing: LAKE.bearing,
       minZoom: LAKE.minZoom,
       maxZoom: LAKE.maxZoom,
+      maxBounds: LAKE.bounds,
       attributionControl: true,
       antialias: true,
     });

@@ -8,7 +8,7 @@ import { lookupParcel } from './lib/parcel.js';
 import { fetchLakeLevel } from './lib/lakeLevel.js';
 import { NORMAL_POOL_FT } from './config.js';
 
-const STORE_KEY = 'tenkiller.map.v1';
+const STORE_KEY = 'tenkiller.map.v2';
 
 const DEFAULTS = {
   basemap: 'satellite',

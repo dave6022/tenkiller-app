@@ -7,9 +7,13 @@ export const LAKE = {
   zoom: 11.2,
   pitch: 62,
   bearing: -18,
-  // Generous bounds so panning stays on the lake and its drainage.
-  bounds: [[-95.28, 35.44], [-94.72, 35.94]],
-  minZoom: 8,
+  // This app is for Lake Tenkiller. Panning is capped at 50 miles from the
+  // centre, which still reaches Tahlequah, Muskogee, Sallisaw, Fort Gibson
+  // and the Cookson Hills, but stops the map wandering off across Oklahoma.
+  bounds: [[-95.895, 35.001], [-94.115, 36.451]],
+  // At zoom 9 a desktop viewport still fits inside those bounds. Lower than
+  // that and the viewport is wider than the box, which Mapbox has to clamp.
+  minZoom: 9,
   maxZoom: 18,
 };
 
