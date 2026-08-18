@@ -433,6 +433,44 @@ LAYERS.push({
 // how onX behaves.
 //
 // Regenerate with: node tools/fetch-recreation.mjs
+
+// Icons and fill patterns are drawn to a canvas synchronously so they can be
+// registered before the layers that reference them. Loading an <img> would be
+// async, and Mapbox would log "image not found" until it arrived.
+function canvasImage(size, draw) {
+  const c = document.createElement('canvas');
+  c.width = size;
+  c.height = size;
+  const g = c.getContext('2d');
+  draw(g, size);
+  return g.getImageData(0, 0, size, size);
+}
+
+function ensureTentIcon(map) {
+  if (map.hasImage('tk-tent')) return;
+  const img = canvasImage(40, (g) => {
+    g.beginPath(); g.moveTo(20, 5); g.lineTo(35, 33); g.lineTo(5, 33); g.closePath();
+    g.fillStyle = '#B45309'; g.fill();
+    g.lineWidth = 3.5; g.strokeStyle = '#FBFAF8'; g.lineJoin = 'round'; g.stroke();
+    // Door, so it reads as a tent and not just a triangle.
+    g.beginPath(); g.moveTo(20, 15); g.lineTo(27.5, 33); g.lineTo(12.5, 33); g.closePath();
+    g.fillStyle = '#FBFAF8'; g.fill();
+  });
+  map.addImage('tk-tent', img, { pixelRatio: 2 });
+}
+
+function ensureHatch(map) {
+  if (map.hasImage('tk-hatch')) return;
+  const img = canvasImage(16, (g, s) => {
+    g.strokeStyle = 'rgba(63,98,18,0.85)';
+    g.lineWidth = 2.2;
+    g.beginPath();
+    for (let i = -s; i < s * 2; i += 8) { g.moveTo(i, 0); g.lineTo(i + s, s); }
+    g.stroke();
+  });
+  map.addImage('tk-hatch', img, { pixelRatio: 2 });
+}
+
 export const REC_LAYER_IDS = ['rec-campsite', 'rec-campground', 'rec-facility'];
 
 LAYERS.push({
@@ -442,11 +480,51 @@ LAYERS.push({
   note: 'Every bookable Corps campsite with hookups, vehicle limits and a link to reserve. Zoom in past a campground to see its individual sites.',
   defaultOn: true,
   attach(map) {
+    ensureTentIcon(map);
+    ensureHatch(map);
+
     if (!map.getSource('recreation')) {
       map.addSource('recreation', {
         type: 'geojson',
         data: new URL('data/recreation.geojson', document.baseURI).href,
         attribution: 'Recreation.gov',
+      });
+    }
+
+    // Campground footprint: translucent green wash, a hatch over it, and a
+    // solid boundary. Derived from site positions — see tools/fetch-recreation.
+    if (!map.getLayer('rec-area-fill')) {
+      map.addLayer({
+        id: 'rec-area-fill',
+        type: 'fill',
+        source: 'recreation',
+        filter: ['==', ['get', 'kind'], 'campground-area'],
+        paint: { 'fill-color': '#3F6212', 'fill-opacity': 0.22 },
+      });
+    }
+
+    if (!map.getLayer('rec-area-hatch')) {
+      map.addLayer({
+        id: 'rec-area-hatch',
+        type: 'fill',
+        source: 'recreation',
+        filter: ['==', ['get', 'kind'], 'campground-area'],
+        paint: { 'fill-pattern': 'tk-hatch', 'fill-opacity': 0.5 },
+      });
+    }
+
+    if (!map.getLayer('rec-area-line')) {
+      map.addLayer({
+        id: 'rec-area-line',
+        type: 'line',
+        source: 'recreation',
+        filter: ['==', ['get', 'kind'], 'campground-area'],
+        layout: { 'line-join': 'round' },
+        paint: {
+          'line-color': '#3F6212',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.6, 16, 4],
+          'line-opacity': 0.95,
+        },
       });
     }
 
@@ -470,20 +548,17 @@ LAYERS.push({
     if (!map.getLayer('rec-campsite')) {
       map.addLayer({
         id: 'rec-campsite',
-        type: 'circle',
+        type: 'symbol',
         source: 'recreation',
         filter: ['==', ['get', 'kind'], 'campsite'],
         minzoom: 13,
-        paint: {
-          'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 2.5, 17, 7],
-          // Sites with power read differently from primitive ones.
-          'circle-color': [
-            'case',
-            ['all', ['has', 'electric'], ['!=', ['get', 'electric'], null]], '#B45309',
-            '#7C6A52',
-          ],
-          'circle-stroke-color': '#FBFAF8',
-          'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 13, 0.6, 17, 1.6],
+        layout: {
+          'icon-image': 'tk-tent',
+          'icon-size': ['interpolate', ['linear'], ['zoom'], 13, 0.28, 15, 0.5, 18, 0.9],
+          // Every site must show; a campground is a grid of them and letting
+          // Mapbox drop colliding icons would hide half the sites.
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
         },
       });
     }
@@ -550,7 +625,8 @@ LAYERS.push({
     }
   },
   detach(map) {
-    ['rec-campsite-label', 'rec-campground-label', 'rec-campground', 'rec-campsite', 'rec-facility']
+    ['rec-campsite-label', 'rec-campground-label', 'rec-campground', 'rec-campsite', 'rec-facility',
+     'rec-area-line', 'rec-area-hatch', 'rec-area-fill']
       .forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
     if (map.getSource('recreation')) map.removeSource('recreation');
   },
