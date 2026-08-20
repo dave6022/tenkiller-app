@@ -39,6 +39,19 @@ export default function MapView({
   const readoutRef = useRef(onReadout);
   readoutRef.current = onReadout;
 
+  // Apply now if the style is ready, otherwise as soon as it is.
+  //
+  // Relying on `style.load` alone was a real bug: if that event was missed the
+  // map sat there with no overlays until something toggled a layer. attach()
+  // is idempotent, so hooking several readiness signals is harmless and means
+  // the first paint cannot be lost.
+  const applyWhenReady = (map) => {
+    if (!map) return;
+    if (map.isStyleLoaded()) { applyLayers(map); return; }
+    map.once('style.load', () => applyLayers(map));
+    map.once('idle', () => applyLayers(map));
+  };
+
   const applyLayers = (map) => {
     const { enabled: on, exaggeration: ex } = stateRef.current;
     LAYERS.forEach((layer) => {
@@ -93,9 +106,14 @@ export default function MapView({
       showUserHeading: true,
     }), 'bottom-right');
 
-    // Fires on first load and again after every setStyle().
+    // style.load fires on first load and again after every setStyle(), so it
+    // stays an `on`. `load` and `idle` are the belt and braces.
     map.on('style.load', () => applyLayers(map));
-    map.on('load', () => onReady && onReady(map));
+    map.on('load', () => {
+      applyLayers(map);
+      if (onReady) onReady(map);
+    });
+    map.once('idle', () => applyLayers(map));
 
     // Click to inspect a coordinate.
     //
@@ -190,9 +208,7 @@ export default function MapView({
 
   // Layer toggles.
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-    applyLayers(map);
+    applyWhenReady(mapRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);
 
