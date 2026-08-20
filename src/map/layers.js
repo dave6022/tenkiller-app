@@ -385,10 +385,13 @@ LAYERS.push({
 
     // Public hunting land: orange wash, hatch, heavier boundary.
     //
-    // Covers state WMAs and Corps of Engineers fee land, which is open to
-    // hunting under ODWC regulation. The Tenkiller Ferry Lake polygon is the
-    // shoreline strip — one outer ring with the water cut out as holes — so
-    // hatching it marks the huntable bank without tinting the lake.
+    // Covers state WMAs and Corps of Engineers fee land, both open to hunting
+    // under ODWC regulation.
+    //
+    // The water is cut out in tools/fetch-publiclands.mjs, because PAD-US fee
+    // boundaries include the lakebed — the government owns the ground under a
+    // reservoir. Left alone, "Tenkiller Ferry Lake" hatched the whole lake
+    // orange. What remains is the bank you can actually stand on.
     //
     // Wildlife refuges stay excluded: Ozark Plateau NWR is closed bat habitat.
     // Corps land still has local closures (dam safety zones, developed
