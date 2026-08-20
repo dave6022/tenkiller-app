@@ -348,7 +348,7 @@ const LAND_COLORS = [
   'corps', '#2563EB',
   'statepark', '#3F6212',
   'refuge', '#0F766E',
-  'wma', '#B45309',
+  'wma', '#EA580C',
   'reserve', '#65A30D',
   'citypark', '#4D7C0F',
   'historic', '#7C3AED',
@@ -363,6 +363,8 @@ LAYERS.push({
   note: 'Corps recreation areas, state parks, wildlife refuges and WMAs, with acreage and public access. USGS PAD-US.',
   defaultOn: true,
   attach(map) {
+    ensureHatch(map, HATCH_ORANGE, 'rgba(234,88,12,0.9)');
+
     if (!map.getSource('publiclands')) {
       map.addSource('publiclands', {
         type: 'geojson',
@@ -381,6 +383,20 @@ LAYERS.push({
       }, before);
     }
 
+    // Public hunting land gets the same treatment as a campground footprint,
+    // in orange: translucent wash, hatch over it, heavier boundary. Wildlife
+    // refuges are deliberately excluded — Ozark Plateau NWR is closed bat
+    // habitat, not somewhere you may hunt.
+    if (!map.getLayer('land-hunt-hatch')) {
+      map.addLayer({
+        id: 'land-hunt-hatch',
+        type: 'fill',
+        source: 'publiclands',
+        filter: ['==', ['get', 'kind'], 'wma'],
+        paint: { 'fill-pattern': HATCH_ORANGE, 'fill-opacity': 0.5 },
+      }, before);
+    }
+
     if (!map.getLayer('land-outline')) {
       map.addLayer({
         id: 'land-outline',
@@ -388,7 +404,13 @@ LAYERS.push({
         source: 'publiclands',
         paint: {
           'line-color': LAND_COLORS,
-          'line-width': ['interpolate', ['linear'], ['zoom'], 9, 1.4, 15, 3],
+          // Mapbox requires a zoom expression to be the outermost one, so the
+          // per-kind choice goes inside each stop rather than wrapping them.
+          'line-width': [
+            'interpolate', ['linear'], ['zoom'],
+            9, ['case', ['==', ['get', 'kind'], 'wma'], 2.2, 1.4],
+            15, ['case', ['==', ['get', 'kind'], 'wma'], 4.5, 3],
+          ],
           'line-opacity': 0.95,
         },
       }, before);
@@ -416,7 +438,7 @@ LAYERS.push({
     }
   },
   detach(map) {
-    ['land-label', 'land-outline', 'land-fill'].forEach((id) => {
+    ['land-label', 'land-outline', 'land-hunt-hatch', 'land-fill'].forEach((id) => {
       if (map.getLayer(id)) map.removeLayer(id);
     });
     if (map.getSource('publiclands')) map.removeSource('publiclands');
@@ -459,17 +481,22 @@ function ensureTentIcon(map) {
   map.addImage('tk-tent', img, { pixelRatio: 2 });
 }
 
-function ensureHatch(map) {
-  if (map.hasImage('tk-hatch')) return;
+// Diagonal hatch, used to mark an area as "you may be here" rather than just
+// tinting it. Green for campgrounds, orange for public hunting land.
+function ensureHatch(map, id, stroke) {
+  if (map.hasImage(id)) return;
   const img = canvasImage(16, (g, s) => {
-    g.strokeStyle = 'rgba(63,98,18,0.85)';
+    g.strokeStyle = stroke;
     g.lineWidth = 2.2;
     g.beginPath();
     for (let i = -s; i < s * 2; i += 8) { g.moveTo(i, 0); g.lineTo(i + s, s); }
     g.stroke();
   });
-  map.addImage('tk-hatch', img, { pixelRatio: 2 });
+  map.addImage(id, img, { pixelRatio: 2 });
 }
+
+export const HATCH_GREEN = 'tk-hatch-green';
+export const HATCH_ORANGE = 'tk-hatch-orange';
 
 export const REC_LAYER_IDS = ['rec-campsite', 'rec-campground', 'rec-facility'];
 
@@ -481,7 +508,7 @@ LAYERS.push({
   defaultOn: true,
   attach(map) {
     ensureTentIcon(map);
-    ensureHatch(map);
+    ensureHatch(map, HATCH_GREEN, 'rgba(63,98,18,0.85)');
 
     if (!map.getSource('recreation')) {
       map.addSource('recreation', {
@@ -509,7 +536,7 @@ LAYERS.push({
         type: 'fill',
         source: 'recreation',
         filter: ['==', ['get', 'kind'], 'campground-area'],
-        paint: { 'fill-pattern': 'tk-hatch', 'fill-opacity': 0.5 },
+        paint: { 'fill-pattern': HATCH_GREEN, 'fill-opacity': 0.5 },
       });
     }
 
