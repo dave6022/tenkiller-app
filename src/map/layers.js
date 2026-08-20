@@ -345,7 +345,7 @@ LAYERS.push({
 // Regenerate with: node tools/fetch-publiclands.mjs
 const LAND_COLORS = [
   'match', ['get', 'kind'],
-  'corps', '#2563EB',
+  'corps', '#EA580C',
   'statepark', '#3F6212',
   'refuge', '#0F766E',
   'wma', '#EA580C',
@@ -383,16 +383,22 @@ LAYERS.push({
       }, before);
     }
 
-    // Public hunting land gets the same treatment as a campground footprint,
-    // in orange: translucent wash, hatch over it, heavier boundary. Wildlife
-    // refuges are deliberately excluded — Ozark Plateau NWR is closed bat
-    // habitat, not somewhere you may hunt.
+    // Public hunting land: orange wash, hatch, heavier boundary.
+    //
+    // Covers state WMAs and Corps of Engineers fee land, which is open to
+    // hunting under ODWC regulation. The Tenkiller Ferry Lake polygon is the
+    // shoreline strip — one outer ring with the water cut out as holes — so
+    // hatching it marks the huntable bank without tinting the lake.
+    //
+    // Wildlife refuges stay excluded: Ozark Plateau NWR is closed bat habitat.
+    // Corps land still has local closures (dam safety zones, developed
+    // recreation areas), so this shows ownership, not permission.
     if (!map.getLayer('land-hunt-hatch')) {
       map.addLayer({
         id: 'land-hunt-hatch',
         type: 'fill',
         source: 'publiclands',
-        filter: ['==', ['get', 'kind'], 'wma'],
+        filter: ['in', ['get', 'kind'], ['literal', ['wma', 'corps']]],
         paint: { 'fill-pattern': HATCH_ORANGE, 'fill-opacity': 0.5 },
       }, before);
     }
@@ -408,8 +414,8 @@ LAYERS.push({
           // per-kind choice goes inside each stop rather than wrapping them.
           'line-width': [
             'interpolate', ['linear'], ['zoom'],
-            9, ['case', ['==', ['get', 'kind'], 'wma'], 2.2, 1.4],
-            15, ['case', ['==', ['get', 'kind'], 'wma'], 4.5, 3],
+            9, ['case', ['in', ['get', 'kind'], ['literal', ['wma', 'corps']]], 2.2, 1.4],
+            15, ['case', ['in', ['get', 'kind'], ['literal', ['wma', 'corps']]], 4.5, 3],
           ],
           'line-opacity': 0.95,
         },
