@@ -4,7 +4,7 @@ export const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
 // A Corps of Engineers reservoir on the Illinois River, ~130 miles of shoreline.
 export const LAKE = {
   center: [-95.005, 35.726],   // [lng, lat] — Mapbox order
-  zoom: 11.2,
+  zoom: 12.4,
   pitch: 62,
   bearing: -18,
   // This app is for Lake Tenkiller. Panning is capped at 50 miles from the

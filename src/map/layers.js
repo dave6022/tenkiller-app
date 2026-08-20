@@ -112,7 +112,7 @@ export const LAYERS = [
             'line-color': '#C8A45C',
             // Index contours (every 5th) draw heavier.
             'line-width': ['case', ['>', ['get', 'index'], 0], 1.4, 0.6],
-            'line-opacity': ['case', ['>', ['get', 'index'], 0], 0.9, 0.45],
+            'line-opacity': ['case', ['>', ['get', 'index'], 0], 0.95, 0.6],
           },
         }, before);
       }
@@ -379,7 +379,7 @@ LAYERS.push({
         id: 'land-fill',
         type: 'fill',
         source: 'publiclands',
-        paint: { 'fill-color': LAND_COLORS, 'fill-opacity': 0.2 },
+        paint: { 'fill-color': LAND_COLORS, 'fill-opacity': 0.28 },
       }, before);
     }
 
@@ -549,7 +549,7 @@ LAYERS.push({
         layout: { 'line-join': 'round' },
         paint: {
           'line-color': '#3F6212',
-          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.6, 16, 4],
+          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 2.6, 16, 4.5],
           'line-opacity': 0.95,
         },
       });
@@ -578,7 +578,7 @@ LAYERS.push({
         type: 'symbol',
         source: 'recreation',
         filter: ['==', ['get', 'kind'], 'campsite'],
-        minzoom: 13,
+        minzoom: 12.5,
         layout: {
           'icon-image': 'tk-tent',
           'icon-size': ['interpolate', ['linear'], ['zoom'], 13, 0.28, 15, 0.5, 18, 0.9],
@@ -700,7 +700,7 @@ LAYERS.push({
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
           'line-color': 'rgba(20,23,15,0.65)',
-          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 3, 17, 8],
+          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 4.5, 17, 9],
         },
       });
     }
@@ -713,7 +713,7 @@ LAYERS.push({
         layout: { 'line-cap': 'butt', 'line-join': 'round' },
         paint: {
           'line-color': TRAIL_COLORS,
-          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.4, 17, 4],
+          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 2.4, 17, 4.5],
           'line-dasharray': [2, 1.4],
         },
       });
